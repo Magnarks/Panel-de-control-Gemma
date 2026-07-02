@@ -1,0 +1,4 @@
+flet
+psutil
+nvidia-ml-py
+certifi
