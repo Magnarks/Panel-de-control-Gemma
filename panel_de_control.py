@@ -278,39 +278,36 @@ async def main(page: ft.Page):
     # 5. Función en segundo plano para actualizar los datos
     async def monitor_sistema():
         while True:
-            # Obtener métricas reales (cpu_percent con interval bloquea, usamos to_thread)
-            cpu_percent = await asyncio.to_thread(lambda: psutil.cpu_percent(interval=1))
-            ram_percent = psutil.virtual_memory().percent
+            try:
+                # Obtener métricas reales (cpu_percent con interval bloquea, usamos to_thread)
+                cpu_percent = await asyncio.to_thread(lambda: psutil.cpu_percent(interval=1))
+                ram_percent = psutil.virtual_memory().percent
 
-            # Modificar los textos y las barras (valores de 0.0 a 1.0)
-            cpu_text.value = f"Uso de CPU: {cpu_percent}%"
-            cpu_progress.value = cpu_percent / 100
+                cpu_text.value = f"Uso de CPU: {cpu_percent}%"
+                cpu_progress.value = cpu_percent / 100
 
-            ram_text.value = f"Uso de RAM: {ram_percent}%"
-            ram_progress.value = ram_percent / 100
+                ram_text.value = f"Uso de RAM: {ram_percent}%"
+                ram_progress.value = ram_percent / 100
 
-            pynvml.nvmlInit()
+                pynvml.nvmlInit()
+                handle = pynvml.nvmlDeviceGetHandleByIndex(0)
+                info = pynvml.nvmlDeviceGetMemoryInfo(handle)
+                uso_gpu = pynvml.nvmlDeviceGetUtilizationRates(handle)
+                pynvml.nvmlShutdown()
 
-            # Obtener el primer handle de GPU (índice 0)
-            handle = pynvml.nvmlDeviceGetHandleByIndex(0)
-            info = pynvml.nvmlDeviceGetMemoryInfo(handle)
-            uso_gpu = pynvml.nvmlDeviceGetUtilizationRates(handle)
+                gpu_text.value = f"Uso de GPU: {uso_gpu.gpu}%"
+                gpu_progress.value = uso_gpu.gpu / 100
+                vram_total_text.value = f"VRAM Total: {info.total / 1024**3:.2f} GB"
+                vram_usada_text.value = f"VRAM Usada: {info.used / 1024**3:.2f} GB"
+                vram_libre_text.value = f"VRAM Libre: {info.free / 1024**3:.2f} GB"
 
-            # Cerrar la conexión
-            pynvml.nvmlShutdown()
+                vram_total_progress.value = info.total / info.total
+                vram_usada_progress.value = info.used / info.total
+                vram_libre_progress.value = info.free / info.total
 
-            gpu_text.value = f"Uso de GPU: {uso_gpu.gpu}%"
-            gpu_progress.value = uso_gpu.gpu / 100
-            vram_total_text.value = f"VRAM Total: {info.total / 1024**3:.2f} GB"
-            vram_usada_text.value = f"VRAM Usada: {info.used / 1024**3:.2f} GB"
-            vram_libre_text.value = f"VRAM Libre: {info.free / 1024**3:.2f} GB"
-
-            vram_total_progress.value = info.total / info.total
-            vram_usada_progress.value = info.used / info.total
-            vram_libre_progress.value = info.free / info.total
-
-            # Refrescar la interfaz gráfica
-            page.update()
+                page.update()
+            except Exception:
+                pass
 
             # Pausa de 4s (+ 1s del cpu_percent = 5s totales entre actualizaciones)
             await asyncio.sleep(4)

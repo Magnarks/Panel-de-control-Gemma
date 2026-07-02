@@ -1,0 +1,14 @@
+# Flet build output
+build/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Entornos virtuales
+.venv/
+venv/
+
+# VS Code
+.vscode/
