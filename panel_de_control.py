@@ -131,10 +131,10 @@ async def main(page: ft.Page):
     def toggle_gemma(e):
         cmd = (
             'llama-server '
-            '--model "C:\\Users\\diego\\.cache\\huggingface\\hub\\models--FreedomAISVR--Gemma-4-12B-it-NVFP4-GGUF'
-            '\\snapshots\\3fce469045dc798186531a35e0cfb0f9ea574815\\gemma-4-12b-it-nvfp4.gguf" '
-            '--mmproj "C:\\Users\\diego\\.cache\\huggingface\\hub\\models--FreedomAISVR--Gemma-4-12B-it-NVFP4-GGUF'
-            '\\snapshots\\3fce469045dc798186531a35e0cfb0f9ea574815\\mmproj-gemma-4-12b-it-f16.gguf" '
+            '--model "C:\\Users\\diego\\.cache\\huggingface\\hub\\models--FreedomAISVR--Gemma-4-12B-it-Uncensored-Heretic-NVFP4-GGUF'
+            '\\snapshots\\f720996e52fc1861ede325c5be720a3f6aa42820\\gemma4-12b-heretic-nvfp4.gguf" '
+            '--mmproj "C:\\Users\\diego\\.cache\\huggingface\\hub\\models--FreedomAISVR--Gemma-4-12B-it-Uncensored-Heretic-NVFP4-GGUF'
+            '\\snapshots\\f720996e52fc1861ede325c5be720a3f6aa42820\\mmproj-gemma-4-12b-heretic-f16.gguf" '
             '--flash-attn on --no-mmap --n-gpu-layers all '
             '--cache-type-k q8_0 --cache-type-v q8_0 --port 11434'
         )
