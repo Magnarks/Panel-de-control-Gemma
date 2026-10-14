@@ -14,7 +14,7 @@ _python_exe = r"C:\Users\diego\AppData\Local\Python\pythoncore-3.14-64\python.ex
 async def main(page: ft.Page):
     page.title = "Panel de control de Gemma"
     #page.window.icon = r"C:\Users\diego\Documents\Python\IA\interfaz_gemma\assets\gemma.ico"
-    page.window.icon = "gemma.ico"
+    page.window.icon = "icon_windows.ico"
     page.window.width = 1200
     page.window.height = 900
     page.scroll = ft.ScrollMode.AUTO
@@ -47,6 +47,8 @@ async def main(page: ft.Page):
 
     # 3. Procesos de servicios y paneles de salida
     procesos = {"openwa": None, "gemma": None, "chatbot": None}
+    selector_carpeta_gemma = ft.FilePicker()
+    page.services.append(selector_carpeta_gemma)
 
     lista_openwa = ft.ListView(height=160, spacing=0, auto_scroll=True)
     panel_openwa = ft.Container(
@@ -128,21 +130,73 @@ async def main(page: ft.Page):
             panel_openwa.visible = False
             page.update()
 
-    def toggle_gemma(e):
-        cmd = (
-            'llama-server '
-            '--model "C:\\Users\\diego\\.cache\\huggingface\\hub\\models--FreedomAISVR--Gemma-4-12B-it-Uncensored-Heretic-NVFP4-GGUF'
-            '\\snapshots\\f720996e52fc1861ede325c5be720a3f6aa42820\\gemma4-12b-heretic-nvfp4.gguf" '
-            '--mmproj "C:\\Users\\diego\\.cache\\huggingface\\hub\\models--FreedomAISVR--Gemma-4-12B-it-Uncensored-Heretic-NVFP4-GGUF'
-            '\\snapshots\\f720996e52fc1861ede325c5be720a3f6aa42820\\mmproj-gemma-4-12b-heretic-f16.gguf" '
-            '--flash-attn on --no-mmap --n-gpu-layers all '
-            '--cache-type-k q8_0 --cache-type-v q8_0 --port 11434'
+    comando_gemma = (
+        'llama-server '
+        '--model "C:\\Users\\diego\\.cache\\huggingface\\hub\\models--Magnarks--gemma-4-12B-it-heretic-NVFP4-GGUF'
+        '\\snapshots\\9f0f3faec7d04c72b0be5b7e5b02d1504e4eb362\\gemma4-heretic-NVFP4.gguf" '
+        '--mmproj "C:\\Users\\diego\\.cache\\huggingface\\hub\\models--Magnarks--gemma-4-12B-it-heretic-NVFP4-GGUF'
+        '\\snapshots\\9f0f3faec7d04c72b0be5b7e5b02d1504e4eb362\\mmproj-gemma4-heretic-BF16.gguf" '
+        '--port 11434 --flash-attn on --load-mode dio --n-gpu-layers all '
+        '--cache-type-k q8_0 --cache-type-v q8_0 '
+        '--temp 1.0 --top-p 0.95 --top-k 64 --repeat-penalty 1.10 --min-p 0.05 '
+        '--reasoning-budget 8192 --repeat-last-n 8192 '
+        '--image-min-tokens 560 --image-max-tokens 560 --ubatch-size 1024 --batch-size 1024 --ctx-size 262144 '
+        '--predict 8192'
+    )
+    campo_comando_gemma = ft.TextField(
+        label="Comando de Gemma",
+        value=comando_gemma,
+        multiline=True,
+        min_lines=3,
+        max_lines=5,
+    )
+    campo_carpeta_gemma = ft.TextField(
+        label="Carpeta de compilación llama.cpp",
+        value=r"C:\Users\diego\Documents\C-C++\llama.cpp\build\bin\Release",
+        read_only=True,
+        expand=True,
+    )
+
+    def actualizar_estado_gemma(e):
+        tiene_comando = bool((campo_comando_gemma.value or "").strip())
+        ruta_build = (campo_carpeta_gemma.value or "").strip()
+        tiene_ejecutable = bool(ruta_build) and os.path.isfile(
+            os.path.join(ruta_build, "llama-server.exe")
         )
+        campo_carpeta_gemma.error_text = (
+            None if tiene_ejecutable else "No se encontró llama-server.exe en esta carpeta"
+        )
+        switch_gemma.disabled = (
+            not (tiene_comando and tiene_ejecutable) and not switch_gemma.value
+        )
+        page.update()
+
+    async def seleccionar_carpeta_gemma(e):
+        ruta_actual = (campo_carpeta_gemma.value or "").strip()
+        ruta = await selector_carpeta_gemma.get_directory_path(
+            dialog_title="Seleccionar carpeta de compilación de llama.cpp",
+            initial_directory=ruta_actual if os.path.isdir(ruta_actual) else None,
+        )
+        if ruta:
+            campo_carpeta_gemma.value = ruta
+            actualizar_estado_gemma(e)
+
+    def toggle_gemma(e):
         if e.control.value:
+            cmd = (campo_comando_gemma.value or "").strip()
+            ruta_build = (campo_carpeta_gemma.value or "").strip()
+            tiene_ejecutable = bool(ruta_build) and os.path.isfile(
+                os.path.join(ruta_build, "llama-server.exe")
+            )
+            if not cmd or not tiene_ejecutable:
+                e.control.value = False
+                actualizar_estado_gemma(e)
+                return
             lista_gemma.controls.clear()
             procesos["gemma"] = subprocess.Popen(
                 cmd,
                 shell=True,
+                cwd=ruta_build,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
                 text=True,
@@ -157,7 +211,7 @@ async def main(page: ft.Page):
         else:
             terminar_proceso("gemma")
             panel_gemma.visible = False
-            page.update()
+            actualizar_estado_gemma(e)
 
     def toggle_chatbot(e):
         if e.control.value:
@@ -194,9 +248,16 @@ async def main(page: ft.Page):
     switch_gemma = ft.Switch(
         label="Gemma 4 12B (llama.cpp)",
         value=False,
+        disabled=not (
+            bool((campo_comando_gemma.value or "").strip())
+            and os.path.isfile(
+                os.path.join(campo_carpeta_gemma.value, "llama-server.exe")
+            )
+        ),
         on_change=toggle_gemma,
         active_color=ft.Colors.BLUE,
     )
+    campo_comando_gemma.on_change = actualizar_estado_gemma
     switch_chatbot = ft.Switch(
         label="Chatbot (app_chatbot.py)",
         value=False,
@@ -213,7 +274,7 @@ async def main(page: ft.Page):
             except Exception:
                 pass
             page.window.prevent_close = False
-            page.window.close()
+            await page.window.close()
 
     page.window.on_event = handle_window_event
 
@@ -254,6 +315,18 @@ async def main(page: ft.Page):
             switch_openwa,
             panel_openwa,
             ft.Container(height=6),
+            ft.Row(
+                [
+                    campo_carpeta_gemma,
+                    ft.IconButton(
+                        icon=ft.Icons.FOLDER_OPEN,
+                        tooltip="Seleccionar carpeta de llama.cpp",
+                        on_click=seleccionar_carpeta_gemma,
+                    ),
+                ],
+                spacing=4,
+            ),
+            campo_comando_gemma,
             switch_gemma,
             panel_gemma,
             ft.Container(height=6),
