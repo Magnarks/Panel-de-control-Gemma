@@ -133,9 +133,9 @@ async def main(page: ft.Page):
     comando_gemma = (
         'llama-server '
         '--model "C:\\Users\\diego\\.cache\\huggingface\\hub\\models--Magnarks--gemma-4-12B-it-heretic-NVFP4-GGUF'
-        '\\snapshots\\9f0f3faec7d04c72b0be5b7e5b02d1504e4eb362\\gemma4-heretic-NVFP4.gguf" '
+        '\\snapshots\\8c51ac0f2383de2d154d217ff4f4c1b8b8dde6a3\\gemma4-heretic-NVFP4-q6emb.gguf" '
         '--mmproj "C:\\Users\\diego\\.cache\\huggingface\\hub\\models--Magnarks--gemma-4-12B-it-heretic-NVFP4-GGUF'
-        '\\snapshots\\9f0f3faec7d04c72b0be5b7e5b02d1504e4eb362\\mmproj-gemma4-heretic-BF16.gguf" '
+        '\\snapshots\\8c51ac0f2383de2d154d217ff4f4c1b8b8dde6a3\\mmproj-gemma4-heretic-BF16.gguf" '
         '--port 11434 --flash-attn on --load-mode dio --n-gpu-layers all '
         '--cache-type-k q8_0 --cache-type-v q8_0 '
         '--temp 1.0 --top-p 0.95 --top-k 64 --repeat-penalty 1.10 --min-p 0.05 '
